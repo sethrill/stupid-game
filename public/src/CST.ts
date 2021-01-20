@@ -3,6 +3,9 @@ export const CST = {
         LOAD: "LOAD",
         MENU: "MENU",
         PVP: 'PVP',
-        LEVEL1: 'LEVEL1'
+        PROLOGUE: 'PROLOGUE',
+        LEVEL0: 'LEVEL0',
+        LEVEL1: 'LEVEL1',
+        LEVEL2: 'LEVEL2'
     }
 }

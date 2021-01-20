@@ -1,7 +1,10 @@
 import { LoadScene } from "./scenes/LoadScene";
 import { MenuScene } from "./scenes/MenuScene";
-import { FirstLevelScene } from "./scenes/FirstLevelScene";
+import { Level1Scene } from "./scenes/levels/Level1Scene";
+import { Level0Scene } from "./scenes/levels/Level0Scene";
 import { PVPScene } from "./scenes/PVPScene";
+import { Level2Scene } from "./scenes/levels/Level2Scene";
+import { PrologueScene } from "./scenes/levels/PrologueScene";
 
 /** @type {import("../typings/phaser")} */
 console.log("hi");
@@ -11,7 +14,10 @@ let game = new Phaser.Game({
     scene: [
         LoadScene,
         MenuScene,
-        FirstLevelScene,
+        PrologueScene,
+        Level0Scene,
+        Level1Scene,
+        Level2Scene,
         PVPScene
     ],
     physics: {

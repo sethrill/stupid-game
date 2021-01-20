@@ -40,7 +40,7 @@ export class MenuScene extends Phaser.Scene {
             hoverSprite.setVisible(false);
         });
         playButton.on("pointerup", () => {
-            this.scene.start(CST.SCENES.LEVEL1);
+            this.scene.start(CST.SCENES.LEVEL0);
         });
 
         optionsButton.on("pointerover", () => {

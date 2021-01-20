@@ -128,7 +128,10 @@ exports.CST = {
     LOAD: "LOAD",
     MENU: "MENU",
     PVP: 'PVP',
-    LEVEL1: 'LEVEL1'
+    PROLOGUE: 'PROLOGUE',
+    LEVEL0: 'LEVEL0',
+    LEVEL1: 'LEVEL1',
+    LEVEL2: 'LEVEL2'
   }
 };
 },{}],"src/scenes/LoadScene.ts":[function(require,module,exports) {
@@ -181,17 +184,46 @@ function (_super) {
     var _this = this;
 
     this.load.image("title_bg", "./assets/images/space.jpg");
+    this.load.image("intro", "./assets/images/intro-text.png");
+    this.load.image("press_space", "./assets/images/press-space.png");
+    this.load.image("died", "./assets/images/dead.png");
+    this.load.image("yes", "./assets/images/yes.png");
+    this.load.image("no", "./assets/images/no.png");
     this.load.image("level_bg", "./assets/images/space.png");
     this.load.image("player", "./assets/images/player.png");
+    this.load.image("ship0", "./assets/images/ship0.png");
+    this.load.image("ship1", "./assets/images/ship1.png");
+    this.load.image("ship2", "./assets/images/ship2.png");
+    this.load.image("ship3", "./assets/images/ship3.png");
+    this.load.image("ship4", "./assets/images/ship4.png");
+    this.load.image("flame1", "./assets/images/Flame_01.png");
+    this.load.image("flame2", "./assets/images/Flame_02.png");
     this.load.image("bullet", "./assets/images/bullet.png");
     this.load.spritesheet("greenEnemy", "./assets/images/green_enemy.png", {
       frameWidth: 52,
       frameHeight: 48
     });
+    this.load.spritesheet("explosion", "./assets/images/explosion.png", {
+      frameWidth: 64,
+      frameHeight: 64
+    });
+    this.load.spritesheet("explosion2", "./assets/images/explosion2.png", {
+      frameWidth: 64,
+      frameHeight: 64
+    });
+    this.load.spritesheet("explosion3", "./assets/images/explosion3.png", {
+      frameWidth: 64,
+      frameHeight: 64
+    });
+    this.load.spritesheet("explosion4", "./assets/images/explosion4.png", {
+      frameWidth: 64,
+      frameHeight: 64
+    });
     this.load.image("title", "./assets/images/title.png");
     this.load.image("play", "./assets/images/play.png");
     this.load.image("options", "./assets/images/options.png");
     this.load.image("pvp", "./assets/images/pvp.png");
+    this.load.image("black_square", "./assets/images/square.png");
     this.load.audio("title_music", "./assets/audio/8bit-orchestra.mp3");
     var loadingBar = this.add.graphics({
       fillStyle: {
@@ -300,7 +332,7 @@ function (_super) {
       hoverSprite.setVisible(false);
     });
     playButton.on("pointerup", function () {
-      _this.scene.start(CST_1.CST.SCENES.LEVEL1);
+      _this.scene.start(CST_1.CST.SCENES.LEVEL0);
     });
     optionsButton.on("pointerover", function () {
       hoverSprite.setVisible(true);
@@ -417,7 +449,7 @@ function (_super) {
 }(Phaser.GameObjects.Image);
 
 exports.Bullet = Bullet;
-},{}],"src/scenes/FirstLevelScene.ts":[function(require,module,exports) {
+},{}],"src/scenes/levels/Level1Scene.ts":[function(require,module,exports) {
 "use strict";
 
 var __extends = this && this.__extends || function () {
@@ -450,30 +482,33 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var CST_1 = require("../CST");
+var CST_1 = require("../../CST");
 
-var Bullet_1 = require("../prefabs/Bullet");
+var Bullet_1 = require("../../prefabs/Bullet");
 
-var FirstLevelScene =
+var Level1Scene =
 /** @class */
 function (_super) {
-  __extends(FirstLevelScene, _super);
+  __extends(Level1Scene, _super);
 
-  function FirstLevelScene() {
+  function Level1Scene() {
     var _this = _super.call(this, {
       key: CST_1.CST.SCENES.LEVEL1
     }) || this;
 
-    _this.enemyBulletsArray = [];
+    _this.enemies = [];
     _this.enemyRows = 0;
     _this.playerDead = false;
+    _this.levelEnded = false;
     return _this;
   }
 
-  FirstLevelScene.prototype.create = function () {
-    var _this = this; // });
+  Level1Scene.prototype.create = function () {
+    var _this = this;
 
-
+    this.enemyRows = 0;
+    this.playerDead = false;
+    this.levelEnded = false;
     this.background = this.add.tileSprite(0, 0, this.game.renderer.width, this.game.renderer.height, "level_bg").setOrigin(0).setDepth(0);
     this.player = this.physics.add.sprite(this.game.renderer.width / 2, this.game.renderer.height * 0.90, "player");
     this.player.setCollideWorldBounds(true);
@@ -501,7 +536,7 @@ function (_super) {
     this.input.on('pointerdown', function () {
       _this.bullet = _this.playerBullets.get();
 
-      if (_this.bullet) {
+      if (_this.bullet && !_this.playerDead) {
         _this.bullet.setActive(true).setVisible(true);
 
         var velocity = new Phaser.Math.Vector2();
@@ -515,15 +550,11 @@ function (_super) {
       }
     }, this);
     this.physics.world.addCollider(this.playerBullets, this.enemyGroups, function (bullet, enemy) {
-      enemy.play('enemyGetHit'); //enemy.gotHit(enemy);
+      var _a;
 
-      enemy.health = enemy.health - 50;
-
-      if (enemy.health === 0 || enemy.health < 0) {
-        enemy.destroy();
-        clearInterval(_this.enemyBulletsArray[enemy.index]);
-      }
-
+      (_a = _this.enemies.find(function (e) {
+        return e.sprite === enemy;
+      })) === null || _a === void 0 ? void 0 : _a.hit();
       bullet.destroy();
     });
     this.physics.world.addCollider(this.enemyBullets, this.player, function () {
@@ -531,16 +562,40 @@ function (_super) {
 
       _this.player.destroy();
 
-      _this.enemyBulletsArray.forEach(function (element) {
-        clearInterval(element);
+      _this.enemies.forEach(function (e) {
+        return e.stopAttacking();
       });
+
+      _this.playerDied();
     });
   };
 
-  FirstLevelScene.prototype.update = function () {
+  Level1Scene.prototype.update = function () {
+    var _this = this;
+
     this.background.tilePositionY -= 0.5;
 
-    if (!this.playerDead) {
+    if (this.enemyGroups.children.entries.length === 0 && this.enemyRows >= 1) {
+      this.player.setCollideWorldBounds(false);
+      this.levelEnded = true;
+      this.tweens.add({
+        targets: this.player,
+        y: -600,
+        ease: 'Power1',
+        duration: 700
+      });
+      setTimeout(function () {
+        _this.player.destroy();
+
+        _this.enemies.forEach(function (e) {
+          return e.stopAttacking();
+        });
+
+        _this.scene.start(CST_1.CST.SCENES.MENU);
+      }, 2000);
+    }
+
+    if (!this.playerDead && !this.levelEnded) {
       this.player.setVelocity(0);
 
       if (this.keyboard.a.isDown) {
@@ -556,20 +611,34 @@ function (_super) {
       this.player.setRotation(angle + Math.PI / 2);
     }
 
-    if (this.enemyGroups.children.entries.length === 0) {
+    if (this.enemyGroups.children.entries.length === 0 && this.enemyRows < 3) {
       this.createEnemies();
     }
   };
 
-  FirstLevelScene.prototype.createEnemies = function () {
+  Level1Scene.prototype.playerDied = function () {
     var _this = this;
 
-    this.enemyBulletsArray = [];
+    this.add.image(this.game.renderer.width / 2, this.game.renderer.height / 2, 'died').setDepth(1);
+    var yesButton = this.add.image(this.game.renderer.width / 2 - 300, this.game.renderer.height / 2 + 50, 'yes').setDepth(1);
+    var noButton = this.add.image(this.game.renderer.width / 2 + 300, this.game.renderer.height / 2 + 50, 'no').setDepth(1);
+    yesButton.setInteractive();
+    noButton.setInteractive();
+    yesButton.on("pointerup", function () {
+      _this.scene.start();
+    });
+    noButton.on("pointerup", function () {
+      _this.scene.start(CST_1.CST.SCENES.MENU);
+    });
+  };
+
+  Level1Scene.prototype.createEnemies = function () {
+    this.enemies = [];
     this.enemyRows++;
     var y = 100;
     var index = 0;
 
-    var _loop_1 = function _loop_1(i) {
+    for (var i = 0; i < 7 * this.enemyRows; i++) {
       index++;
 
       if (index > 7) {
@@ -578,46 +647,452 @@ function (_super) {
       }
 
       var x = 100 * (index - 1) + 100;
-      var enemy = this_1.physics.add.sprite(x, -200, "greenEnemy");
-      enemy.health = 100;
-      enemy.index = i;
-      this_1.enemyGroups.add(enemy);
-      var tween = this_1.tweens.add({
-        targets: enemy,
-        y: y,
-        ease: 'Power1',
-        duration: 700
+      var enemy = new ActiveEnemy(this, x, y, index, this.enemyBullets);
+      this.enemies.push(enemy);
+      this.enemyGroups.add(enemy.sprite);
+    }
+  };
+
+  return Level1Scene;
+}(Phaser.Scene);
+
+exports.Level1Scene = Level1Scene;
+
+var ActiveEnemy =
+/** @class */
+function () {
+  function ActiveEnemy(scene, x, y, index, enemyBullets) {
+    var _this = this;
+
+    this.sprite = scene.physics.add.sprite(x, -200, "greenEnemy");
+    this.sprite.name = "enemy" + index;
+    scene.tweens.add({
+      targets: this.sprite,
+      y: y,
+      ease: 'Power1',
+      duration: 700
+    });
+    this.health = 100;
+    this.index = index;
+    this.interval = setInterval(function () {
+      var bullet = enemyBullets.get();
+
+      if (bullet) {
+        bullet.setActive(true).setVisible(true);
+        var velocity = new Phaser.Math.Vector2();
+        scene.physics.velocityFromRotation(_this.sprite.rotation, 400, velocity);
+        bullet.fire(_this.sprite, {
+          x: velocity.x * -180 / Math.PI,
+          y: velocity.y * -180 / Math.PI
+        });
+      }
+    }, Math.floor(Math.random() * Math.floor(2000)) + 1000);
+  }
+
+  ActiveEnemy.prototype.hit = function () {
+    this.sprite.play('enemyGetHit');
+    this.health -= 50;
+
+    if (this.health <= 0) {
+      this.sprite.destroy();
+      this.stopAttacking();
+    }
+  };
+
+  ActiveEnemy.prototype.stopAttacking = function () {
+    clearInterval(this.interval);
+  };
+
+  return ActiveEnemy;
+}();
+},{"../../CST":"src/CST.ts","../../prefabs/Bullet":"src/prefabs/Bullet.ts"}],"src/prefabs/dialogBox.ts":[function(require,module,exports) {
+"use strict";
+
+var __extends = this && this.__extends || function () {
+  var _extendStatics = function extendStatics(d, b) {
+    _extendStatics = Object.setPrototypeOf || {
+      __proto__: []
+    } instanceof Array && function (d, b) {
+      d.__proto__ = b;
+    } || function (d, b) {
+      for (var p in b) {
+        if (b.hasOwnProperty(p)) d[p] = b[p];
+      }
+    };
+
+    return _extendStatics(d, b);
+  };
+
+  return function (d, b) {
+    _extendStatics(d, b);
+
+    function __() {
+      this.constructor = d;
+    }
+
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+  };
+}();
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var DialogBox =
+/** @class */
+function (_super) {
+  __extends(DialogBox, _super);
+
+  function DialogBox(scene, x, y) {
+    var _this = _super.call(this, scene, x, y, 'black_square') || this;
+
+    _this.padding = 32;
+    _this.windowHeight = 150;
+    _this.eventCounter = 0;
+    _this.dialogSpeed = 200;
+    _this.outerWindowColor = 0x907748;
+    _this.scene = scene;
+    _this.graphics = _this.scene.add.graphics();
+    return _this;
+  }
+
+  DialogBox.prototype.create = function () {}; // showMessageBox(text: string, w = this.getGameWidth(), h = this.getGameHeight()) {
+  //     if (this.messageBox) {
+  //         this.messageBox.destroy();
+  //     }
+  //     this.createWindow();
+  // }
+
+
+  DialogBox.prototype.showMessageBox = function (text, outerWindowColor) {
+    if (outerWindowColor) this.outerWindowColor = outerWindowColor;
+    var gameHeight = this.getGameHeight();
+    var gameWidth = this.getGameWidth();
+    this.dimensions = this.calculateWindowDimensions(gameWidth, gameHeight);
+    this.graphics = this.scene.add.graphics();
+    this.createOuterWindow(this.dimensions.x, this.dimensions.y, this.dimensions.rectWidth, this.dimensions.rectHeight);
+    this.createInnerWindow(this.dimensions.x, this.dimensions.y, this.dimensions.rectWidth, this.dimensions.rectHeight);
+    this.setText(text, outerWindowColor, true);
+  };
+
+  DialogBox.prototype.createInnerWindow = function (x, y, rectWidth, rectHeight) {
+    this.graphics.fillStyle(0x303030, 1);
+    this.graphics.fillRect(x + 1, y + 1, rectWidth - 1, rectHeight - 1);
+  };
+
+  DialogBox.prototype.createOuterWindow = function (x, y, rectWidth, rectHeight) {
+    this.graphics.lineStyle(3, this.outerWindowColor, 1);
+    this.graphics.strokeRect(x, y, rectWidth, rectHeight);
+  };
+
+  DialogBox.prototype.getGameWidth = function () {
+    return this.scene.sys.game.config.width;
+  };
+
+  DialogBox.prototype.getGameHeight = function () {
+    return this.scene.sys.game.config.height;
+  };
+
+  DialogBox.prototype.calculateWindowDimensions = function (width, height) {
+    var x = this.padding;
+    var y = height - this.windowHeight - this.padding;
+    var rectWidth = width - this.padding * 2;
+    var rectHeight = this.windowHeight;
+    return {
+      x: x,
+      y: y,
+      rectWidth: rectWidth,
+      rectHeight: rectHeight
+    };
+  };
+
+  DialogBox.prototype.setText = function (text, outerWindowColor, animate) {
+    if (animate === void 0) {
+      animate = true;
+    }
+
+    console.log(outerWindowColor);
+
+    if (outerWindowColor) {
+      this.outerWindowColor = outerWindowColor;
+      this.createOuterWindow(this.dimensions.x, this.dimensions.y, this.dimensions.rectWidth, this.dimensions.rectHeight);
+    } // Reset the dialog
+
+
+    this.eventCounter = 0;
+    this.dialog = text.split('');
+    if (this.timedEvent) this.timedEvent.remove();
+    var tempText = animate ? '' : text;
+
+    this._setText(tempText);
+
+    if (animate) {
+      this.timedEvent = this.scene.time.addEvent({
+        delay: 150 - this.dialogSpeed * 5,
+        callback: this.animateText,
+        callbackScope: this,
+        loop: true
       });
-      var bullet = setInterval(function () {
-        var bullet = _this.enemyBullets.get();
+    }
+  };
 
-        if (bullet) {
-          bullet.setActive(true).setVisible(true);
-          var velocity = new Phaser.Math.Vector2();
-
-          _this.physics.velocityFromRotation(enemy.rotation, 400, velocity);
-
-          bullet.fire(enemy, {
-            x: velocity.x * -180 / Math.PI,
-            y: velocity.y * -180 / Math.PI
-          });
+  DialogBox.prototype._setText = function (text) {
+    // Reset the dialog
+    if (this.text) this.text.destroy();
+    var x = this.padding + 10;
+    var y = this.getGameHeight() - this.windowHeight - this.padding + 10;
+    this.text = this.scene.make.text({
+      x: x,
+      y: y,
+      text: text,
+      style: {
+        wordWrap: {
+          width: this.getGameWidth() - this.padding * 2 - 25
         }
-      }, Math.floor(Math.random() * Math.floor(2000)) + 1000);
-      this_1.enemyBulletsArray.push(bullet);
+      }
+    });
+  };
+
+  DialogBox.prototype.animateText = function () {
+    this.eventCounter++;
+    this.text.setText(this.text.text + this.dialog[this.eventCounter - 1]);
+
+    if (this.eventCounter === this.dialog.length) {
+      this.timedEvent.remove();
+    }
+  };
+
+  DialogBox.prototype.closeWindow = function () {
+    this.graphics.visible = false;
+    this.text.visible = false;
+  };
+
+  return DialogBox;
+}(Phaser.GameObjects.Image);
+
+exports.DialogBox = DialogBox;
+},{}],"src/scenes/levels/Level0Scene.ts":[function(require,module,exports) {
+"use strict";
+
+var __extends = this && this.__extends || function () {
+  var _extendStatics = function extendStatics(d, b) {
+    _extendStatics = Object.setPrototypeOf || {
+      __proto__: []
+    } instanceof Array && function (d, b) {
+      d.__proto__ = b;
+    } || function (d, b) {
+      for (var p in b) {
+        if (b.hasOwnProperty(p)) d[p] = b[p];
+      }
+    };
+
+    return _extendStatics(d, b);
+  };
+
+  return function (d, b) {
+    _extendStatics(d, b);
+
+    function __() {
+      this.constructor = d;
+    }
+
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+  };
+}();
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var CST_1 = require("../../CST");
+
+var dialogBox_1 = require("../../prefabs/dialogBox");
+
+var Level0Scene =
+/** @class */
+function (_super) {
+  __extends(Level0Scene, _super);
+
+  function Level0Scene() {
+    var _this = _super.call(this, {
+      key: CST_1.CST.SCENES.LEVEL0
+    }) || this;
+
+    _this.ships = [];
+    _this.rocketFlames = [];
+    _this.conversationIndex = 0;
+    _this.conversation = [{
+      dialogue: 'Captain: Alright team, we\'re getting close. The enemy is right ahead. The main fleet is pulling most of the enemy ships towards them, so that can perform a surprise direct attack on their main cruiser and and disable the whole army. This is our only chance to defeat them, we have to succed. Everyone is depending on us...',
+      outerWindowColor: 0xff0000
+    }, {
+      dialogue: 'Captain: Our ships have been equiped with the most advanced weapons earth currently has.',
+      outerWindowColor: 0xff0000
+    }, {
+      dialogue: 'Marco: Captain, we didn\'t have the chance to test the new weapons and everything seems to be deactivated except the main cannons...',
+      outerWindowColor: 0x008000
+    }, {
+      dialogue: 'Captain: Don\' worry Marco, the weapons work just fine. As a precaution, the weapons have been deactivated.',
+      outerWindowColor: 0xff0000
+    }, {
+      dialogue: 'Kassandra: Why though? It\'s not like the aliens care about stealing our ships. They have much more advanced weapons and ships than us. That\'s why we\'re losing in the first place.',
+      outerWindowColor: 0xffff00
+    }, {
+      dialogue: 'Annie: They deactivated the weapons because they knew you were going to be on the team. They didn\'t want to risk you blowing up the base, Kassandra.',
+      outerWindowColor: 0x800080
+    }, {
+      dialogue: 'Kassandra: Hilarious. What if we get attacked now? What will you do with your weapons locked, Annie? Sasha isn\'t here to save you again.',
+      outerWindowColor: 0xffff00
+    }, {
+      dialogue: 'Annie: You little bit...',
+      outerWindowColor: 0x800080
+    }, {
+      dialogue: 'Jean: Kassandra has a point. It was a stupid idea to come all the way out here with everything locked. Our cannons won\'t be enough if we encounter the aliens.',
+      outerWindowColor: 0x00b8ff
+    }, {
+      dialogue: 'Captain: Enough! We are Earth\'s last hope and you decide to argue!? It was my decisions to have them locked and I have the codes to unlock them. Jean, I\'m transmitting you the codes to activate the weapons for your ship.',
+      outerWindowColor: 0xff0000
+    }, {
+      dialogue: 'Jean: Codes received. Weapons unlocked and activated.',
+      outerWindowColor: 0x00b8ff
+    }, {
+      dialogue: 'Captain: Marco, you\'re next.',
+      outerWindowColor: 0xff0000
+    }, {
+      dialogue: 'Marco: Weapons activated!',
+      outerWindowColor: 0x008000
+    }, {
+      dialogue: 'Captain: Annie, it\'s your turn.',
+      outerWindowColor: 0xff0000
+    }, {
+      dialogue: 'Annie: Received and activated, captain!',
+      outerWindowColor: 0x800080
+    }, {
+      dialogue: 'Captain: Kassandra, you\'re last. I\'m sending you the co...',
+      outerWindowColor: 0xff0000
+    }];
+    _this.shipsDetails = [{
+      x: 135,
+      y: 350,
+      color: 0x04ff00
+    }, {
+      x: 135 * 2,
+      y: 330,
+      color: 0xfff700
+    }, {
+      x: 135 * 3,
+      y: 310,
+      color: 0xff3bb1
+    }, {
+      x: 135 * 4,
+      y: 330,
+      color: 0xc619ff
+    }, {
+      x: 135 * 5,
+      y: 350,
+      color: 0
+    }];
+    return _this;
+  }
+
+  Level0Scene.prototype.create = function () {
+    var _this = this;
+
+    this.cameras.main.fadeIn(500);
+    this.background = this.add.tileSprite(0, 0, this.game.renderer.width, this.game.renderer.height, "level_bg").setOrigin(0).setDepth(0);
+    this.messageBox = new dialogBox_1.DialogBox(this, 300, 400);
+    this.anims.create({
+      key: 'explosion',
+      frames: this.anims.generateFrameNames("explosion")
+    });
+    this.anims.create({
+      key: 'rocketFlame',
+      frames: [{
+        key: 'flame1'
+      }, {
+        key: 'flame2'
+      }],
+      frameRate: 10,
+      repeat: -1
+    });
+    this.createShips();
+    this.nextKey = this.input.keyboard.addKey("space");
+    setTimeout(function () {
+      _this.playDialogue(_this.conversation);
+    }, 1000);
+  };
+
+  Level0Scene.prototype.playDialogue = function (conversation) {
+    var _this = this;
+
+    this.conversationIndex = 0;
+    this.messageBox.showMessageBox(conversation[0].dialogue, conversation[0].outerWindowColor);
+    this.nextKey.on("down", function () {
+      _this.conversationIndex++;
+
+      if (conversation.length === _this.conversationIndex) {
+        //this.scene.start(CST.SCENES.LEVEL1);
+        _this.createBulletsAndCollision();
+
+        _this.messageBox.closeWindow();
+      } else if (_this.conversationIndex < _this.conversation.length) {
+        _this.messageBox.setText(conversation[_this.conversationIndex].dialogue, conversation[_this.conversationIndex].outerWindowColor);
+      } //this.createBulletsAndCollision()
+
+    });
+  };
+
+  Level0Scene.prototype.update = function () {
+    this.background.tilePositionY -= 9;
+  };
+
+  Level0Scene.prototype.createShips = function () {
+    for (var i = 0; i < 5; i++) {
+      var ship = this.physics.add.sprite(this.shipsDetails[i].x, this.shipsDetails[i].y, "ship" + i).setDepth(3);
+      var rocketFlame = this.add.sprite(this.shipsDetails[i].x, this.shipsDetails[i].y + 45, 'flame1').setScale(0.5).play('rocketFlame');
+      ship.setScale(0.22);
+      this.rocketFlames.push(rocketFlame);
+      this.ships.push(ship);
+    }
+  };
+
+  Level0Scene.prototype.createBulletsAndCollision = function () {
+    var _this = this;
+
+    var _loop_1 = function _loop_1(i) {
+      var bullet = this_1.physics.add.sprite(this_1.ships[i].x, -300, "bullet").setDepth(2);
+      var explosion = this_1.physics.add.sprite(this_1.ships[i].x, this_1.ships[i].y, "explosion").setDepth(2);
+      explosion.scale = 3;
+      this_1.physics.world.addCollider(this_1.ships[i], bullet, function () {
+        explosion.play('explosion');
+
+        _this.ships[i].destroy();
+
+        _this.rocketFlames[i].destroy();
+
+        bullet.destroy();
+      });
+      setTimeout(function () {
+        _this.tweens.add({
+          targets: bullet,
+          y: 1200,
+          ease: 'Power1',
+          duration: 700
+        });
+      }, i * 100);
     };
 
     var this_1 = this;
 
-    for (var i = 0; i < 7 * this.enemyRows; i++) {
+    for (var i = 0; i < 4; i++) {
       _loop_1(i);
     }
   };
 
-  return FirstLevelScene;
+  return Level0Scene;
 }(Phaser.Scene);
 
-exports.FirstLevelScene = FirstLevelScene;
-},{"../CST":"src/CST.ts","../prefabs/Bullet":"src/prefabs/Bullet.ts"}],"src/prefabs/PVPBullets.ts":[function(require,module,exports) {
+exports.Level0Scene = Level0Scene;
+},{"../../CST":"src/CST.ts","../../prefabs/dialogBox":"src/prefabs/dialogBox.ts"}],"src/prefabs/PVPBullets.ts":[function(require,module,exports) {
 "use strict";
 
 var __extends = this && this.__extends || function () {
@@ -10603,7 +11078,130 @@ function (_super) {
 }(Phaser.Scene);
 
 exports.PVPScene = PVPScene;
-},{"../CST":"src/CST.ts","../prefabs/PVPBullets":"src/prefabs/PVPBullets.ts","socket.io-client":"../node_modules/socket.io-client/lib/index.js"}],"src/main.ts":[function(require,module,exports) {
+},{"../CST":"src/CST.ts","../prefabs/PVPBullets":"src/prefabs/PVPBullets.ts","socket.io-client":"../node_modules/socket.io-client/lib/index.js"}],"src/scenes/levels/Level2Scene.ts":[function(require,module,exports) {
+"use strict";
+
+var __extends = this && this.__extends || function () {
+  var _extendStatics = function extendStatics(d, b) {
+    _extendStatics = Object.setPrototypeOf || {
+      __proto__: []
+    } instanceof Array && function (d, b) {
+      d.__proto__ = b;
+    } || function (d, b) {
+      for (var p in b) {
+        if (b.hasOwnProperty(p)) d[p] = b[p];
+      }
+    };
+
+    return _extendStatics(d, b);
+  };
+
+  return function (d, b) {
+    _extendStatics(d, b);
+
+    function __() {
+      this.constructor = d;
+    }
+
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+  };
+}();
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var CST_1 = require("../../CST");
+
+var Level2Scene =
+/** @class */
+function (_super) {
+  __extends(Level2Scene, _super);
+
+  function Level2Scene() {
+    var _this = _super.call(this, {
+      key: CST_1.CST.SCENES.LEVEL2
+    }) || this;
+
+    _this.playerDead = false;
+    _this.levelEnded = false;
+    return _this;
+  }
+
+  Level2Scene.prototype.create = function () {
+    this.background = this.add.tileSprite(0, 0, this.game.renderer.width, this.game.renderer.height, "level_bg").setOrigin(0).setDepth(0);
+    this.player = this.physics.add.sprite(this.game.renderer.width / 2, this.game.renderer.height * 0.90, "player");
+    this.player.setCollideWorldBounds(true);
+    this.keyboard = this.input.keyboard.addKeys("a, d");
+  };
+
+  Level2Scene.prototype.update = function () {
+    this.background.tilePositionY -= 3;
+
+    if (!this.playerDead && !this.levelEnded) {
+      this.player.setVelocity(0);
+
+      if (this.keyboard.a.isDown) {
+        this.player.setVelocityX(-400);
+      }
+
+      if (this.keyboard.d.isDown) {
+        this.player.setVelocityX(400);
+      }
+    }
+  };
+
+  return Level2Scene;
+}(Phaser.Scene);
+
+exports.Level2Scene = Level2Scene;
+},{"../../CST":"src/CST.ts"}],"src/scenes/levels/PrologueScene.ts":[function(require,module,exports) {
+"use strict";
+
+var __extends = this && this.__extends || function () {
+  var _extendStatics = function extendStatics(d, b) {
+    _extendStatics = Object.setPrototypeOf || {
+      __proto__: []
+    } instanceof Array && function (d, b) {
+      d.__proto__ = b;
+    } || function (d, b) {
+      for (var p in b) {
+        if (b.hasOwnProperty(p)) d[p] = b[p];
+      }
+    };
+
+    return _extendStatics(d, b);
+  };
+
+  return function (d, b) {
+    _extendStatics(d, b);
+
+    function __() {
+      this.constructor = d;
+    }
+
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+  };
+}();
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var PrologueScene =
+/** @class */
+function (_super) {
+  __extends(PrologueScene, _super);
+
+  function PrologueScene() {
+    return _super !== null && _super.apply(this, arguments) || this;
+  }
+
+  return PrologueScene;
+}(Phaser.Scene);
+
+exports.PrologueScene = PrologueScene;
+},{}],"src/main.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10614,9 +11212,15 @@ var LoadScene_1 = require("./scenes/LoadScene");
 
 var MenuScene_1 = require("./scenes/MenuScene");
 
-var FirstLevelScene_1 = require("./scenes/FirstLevelScene");
+var Level1Scene_1 = require("./scenes/levels/Level1Scene");
+
+var Level0Scene_1 = require("./scenes/levels/Level0Scene");
 
 var PVPScene_1 = require("./scenes/PVPScene");
+
+var Level2Scene_1 = require("./scenes/levels/Level2Scene");
+
+var PrologueScene_1 = require("./scenes/levels/PrologueScene");
 /** @type {import("../typings/phaser")} */
 
 
@@ -10624,12 +11228,12 @@ console.log("hi");
 var game = new Phaser.Game({
   width: 800,
   height: 600,
-  scene: [LoadScene_1.LoadScene, MenuScene_1.MenuScene, FirstLevelScene_1.FirstLevelScene, PVPScene_1.PVPScene],
+  scene: [LoadScene_1.LoadScene, MenuScene_1.MenuScene, PrologueScene_1.PrologueScene, Level0Scene_1.Level0Scene, Level1Scene_1.Level1Scene, Level2Scene_1.Level2Scene, PVPScene_1.PVPScene],
   physics: {
     default: "arcade"
   }
 });
-},{"./scenes/LoadScene":"src/scenes/LoadScene.ts","./scenes/MenuScene":"src/scenes/MenuScene.ts","./scenes/FirstLevelScene":"src/scenes/FirstLevelScene.ts","./scenes/PVPScene":"src/scenes/PVPScene.ts"}],"C:/Users/Alex/AppData/Roaming/npm/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+},{"./scenes/LoadScene":"src/scenes/LoadScene.ts","./scenes/MenuScene":"src/scenes/MenuScene.ts","./scenes/levels/Level1Scene":"src/scenes/levels/Level1Scene.ts","./scenes/levels/Level0Scene":"src/scenes/levels/Level0Scene.ts","./scenes/PVPScene":"src/scenes/PVPScene.ts","./scenes/levels/Level2Scene":"src/scenes/levels/Level2Scene.ts","./scenes/levels/PrologueScene":"src/scenes/levels/PrologueScene.ts"}],"C:/Users/Alex/AppData/Roaming/npm/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -10657,7 +11261,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "52581" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "50783" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
