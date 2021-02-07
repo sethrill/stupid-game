@@ -332,7 +332,7 @@ function (_super) {
       hoverSprite.setVisible(false);
     });
     playButton.on("pointerup", function () {
-      _this.scene.start(CST_1.CST.SCENES.LEVEL0);
+      _this.scene.start(CST_1.CST.SCENES.LEVEL1);
     });
     optionsButton.on("pointerover", function () {
       hoverSprite.setVisible(true);
@@ -449,219 +449,17 @@ function (_super) {
 }(Phaser.GameObjects.Image);
 
 exports.Bullet = Bullet;
-},{}],"src/scenes/levels/Level1Scene.ts":[function(require,module,exports) {
+},{}],"src/prefabs/Enemy.ts":[function(require,module,exports) {
 "use strict";
-
-var __extends = this && this.__extends || function () {
-  var _extendStatics = function extendStatics(d, b) {
-    _extendStatics = Object.setPrototypeOf || {
-      __proto__: []
-    } instanceof Array && function (d, b) {
-      d.__proto__ = b;
-    } || function (d, b) {
-      for (var p in b) {
-        if (b.hasOwnProperty(p)) d[p] = b[p];
-      }
-    };
-
-    return _extendStatics(d, b);
-  };
-
-  return function (d, b) {
-    _extendStatics(d, b);
-
-    function __() {
-      this.constructor = d;
-    }
-
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-  };
-}();
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var CST_1 = require("../../CST");
-
-var Bullet_1 = require("../../prefabs/Bullet");
-
-var Level1Scene =
-/** @class */
-function (_super) {
-  __extends(Level1Scene, _super);
-
-  function Level1Scene() {
-    var _this = _super.call(this, {
-      key: CST_1.CST.SCENES.LEVEL1
-    }) || this;
-
-    _this.enemies = [];
-    _this.enemyRows = 0;
-    _this.playerDead = false;
-    _this.levelEnded = false;
-    return _this;
-  }
-
-  Level1Scene.prototype.create = function () {
-    var _this = this;
-
-    this.enemyRows = 0;
-    this.playerDead = false;
-    this.levelEnded = false;
-    this.background = this.add.tileSprite(0, 0, this.game.renderer.width, this.game.renderer.height, "level_bg").setOrigin(0).setDepth(0);
-    this.player = this.physics.add.sprite(this.game.renderer.width / 2, this.game.renderer.height * 0.90, "player");
-    this.player.setCollideWorldBounds(true);
-    this.enemyGroups = this.physics.add.group();
-    this.playerBullets = this.physics.add.group({
-      classType: Bullet_1.Bullet,
-      maxSize: 50,
-      runChildUpdate: true
-    });
-    this.enemyBullets = this.physics.add.group({
-      classType: Bullet_1.Bullet,
-      maxSize: 50,
-      runChildUpdate: true
-    });
-    this.createEnemies();
-    this.keyboard = this.input.keyboard.addKeys("a, d");
-    this.anims.create({
-      key: 'enemyGetHit',
-      repeat: 1,
-      frameRate: 30,
-      frames: this.anims.generateFrameNames("greenEnemy", {
-        frames: [0, 1, 2, 0]
-      })
-    });
-    this.input.on('pointerdown', function () {
-      _this.bullet = _this.playerBullets.get();
-
-      if (_this.bullet && !_this.playerDead) {
-        _this.bullet.setActive(true).setVisible(true);
-
-        var velocity = new Phaser.Math.Vector2();
-
-        _this.physics.velocityFromRotation(_this.player.rotation, 400, velocity);
-
-        _this.bullet.fire(_this.player, {
-          x: velocity.x * 180 / Math.PI,
-          y: velocity.y * 180 / Math.PI
-        });
-      }
-    }, this);
-    this.physics.world.addCollider(this.playerBullets, this.enemyGroups, function (bullet, enemy) {
-      var _a;
-
-      (_a = _this.enemies.find(function (e) {
-        return e.sprite === enemy;
-      })) === null || _a === void 0 ? void 0 : _a.hit();
-      bullet.destroy();
-    });
-    this.physics.world.addCollider(this.enemyBullets, this.player, function () {
-      _this.playerDead = true;
-
-      _this.player.destroy();
-
-      _this.enemies.forEach(function (e) {
-        return e.stopAttacking();
-      });
-
-      _this.playerDied();
-    });
-  };
-
-  Level1Scene.prototype.update = function () {
-    var _this = this;
-
-    this.background.tilePositionY -= 0.5;
-
-    if (this.enemyGroups.children.entries.length === 0 && this.enemyRows >= 1) {
-      this.player.setCollideWorldBounds(false);
-      this.levelEnded = true;
-      this.tweens.add({
-        targets: this.player,
-        y: -600,
-        ease: 'Power1',
-        duration: 700
-      });
-      setTimeout(function () {
-        _this.player.destroy();
-
-        _this.enemies.forEach(function (e) {
-          return e.stopAttacking();
-        });
-
-        _this.scene.start(CST_1.CST.SCENES.MENU);
-      }, 2000);
-    }
-
-    if (!this.playerDead && !this.levelEnded) {
-      this.player.setVelocity(0);
-
-      if (this.keyboard.a.isDown) {
-        this.player.setVelocityX(-400);
-      }
-
-      if (this.keyboard.d.isDown) {
-        this.player.setVelocityX(400);
-      }
-
-      var angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, this.input.x, this.input.y); //rotation cannon
-
-      this.player.setRotation(angle + Math.PI / 2);
-    }
-
-    if (this.enemyGroups.children.entries.length === 0 && this.enemyRows < 3) {
-      this.createEnemies();
-    }
-  };
-
-  Level1Scene.prototype.playerDied = function () {
-    var _this = this;
-
-    this.add.image(this.game.renderer.width / 2, this.game.renderer.height / 2, 'died').setDepth(1);
-    var yesButton = this.add.image(this.game.renderer.width / 2 - 300, this.game.renderer.height / 2 + 50, 'yes').setDepth(1);
-    var noButton = this.add.image(this.game.renderer.width / 2 + 300, this.game.renderer.height / 2 + 50, 'no').setDepth(1);
-    yesButton.setInteractive();
-    noButton.setInteractive();
-    yesButton.on("pointerup", function () {
-      _this.scene.start();
-    });
-    noButton.on("pointerup", function () {
-      _this.scene.start(CST_1.CST.SCENES.MENU);
-    });
-  };
-
-  Level1Scene.prototype.createEnemies = function () {
-    this.enemies = [];
-    this.enemyRows++;
-    var y = 100;
-    var index = 0;
-
-    for (var i = 0; i < 7 * this.enemyRows; i++) {
-      index++;
-
-      if (index > 7) {
-        y = y + 100;
-        index = 1;
-      }
-
-      var x = 100 * (index - 1) + 100;
-      var enemy = new ActiveEnemy(this, x, y, index, this.enemyBullets);
-      this.enemies.push(enemy);
-      this.enemyGroups.add(enemy.sprite);
-    }
-  };
-
-  return Level1Scene;
-}(Phaser.Scene);
-
-exports.Level1Scene = Level1Scene;
-
-var ActiveEnemy =
+var Enemy =
 /** @class */
 function () {
-  function ActiveEnemy(scene, x, y, index, enemyBullets) {
+  function Enemy(scene, x, y, index, enemyBullets) {
     var _this = this;
 
     this.sprite = scene.physics.add.sprite(x, -200, "greenEnemy");
@@ -689,7 +487,7 @@ function () {
     }, Math.floor(Math.random() * Math.floor(2000)) + 1000);
   }
 
-  ActiveEnemy.prototype.hit = function () {
+  Enemy.prototype.hit = function () {
     this.sprite.play('enemyGetHit');
     this.health -= 50;
 
@@ -699,13 +497,15 @@ function () {
     }
   };
 
-  ActiveEnemy.prototype.stopAttacking = function () {
+  Enemy.prototype.stopAttacking = function () {
     clearInterval(this.interval);
   };
 
-  return ActiveEnemy;
+  return Enemy;
 }();
-},{"../../CST":"src/CST.ts","../../prefabs/Bullet":"src/prefabs/Bullet.ts"}],"src/prefabs/dialogBox.ts":[function(require,module,exports) {
+
+exports.Enemy = Enemy;
+},{}],"src/prefabs/dialogBox.ts":[function(require,module,exports) {
 "use strict";
 
 var __extends = this && this.__extends || function () {
@@ -871,7 +671,322 @@ function (_super) {
 }(Phaser.GameObjects.Image);
 
 exports.DialogBox = DialogBox;
-},{}],"src/scenes/levels/Level0Scene.ts":[function(require,module,exports) {
+},{}],"src/scenes/levels/Level1Scene.ts":[function(require,module,exports) {
+"use strict";
+
+var __extends = this && this.__extends || function () {
+  var _extendStatics = function extendStatics(d, b) {
+    _extendStatics = Object.setPrototypeOf || {
+      __proto__: []
+    } instanceof Array && function (d, b) {
+      d.__proto__ = b;
+    } || function (d, b) {
+      for (var p in b) {
+        if (b.hasOwnProperty(p)) d[p] = b[p];
+      }
+    };
+
+    return _extendStatics(d, b);
+  };
+
+  return function (d, b) {
+    _extendStatics(d, b);
+
+    function __() {
+      this.constructor = d;
+    }
+
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+  };
+}();
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var CST_1 = require("../../CST");
+
+var Bullet_1 = require("../../prefabs/Bullet");
+
+var Enemy_1 = require("../../prefabs/Enemy");
+
+var dialogBox_1 = require("../../prefabs/dialogBox");
+
+var Level1Scene =
+/** @class */
+function (_super) {
+  __extends(Level1Scene, _super);
+
+  function Level1Scene() {
+    var _this = _super.call(this, {
+      key: CST_1.CST.SCENES.LEVEL1
+    }) || this;
+
+    _this.enemies = [];
+    _this.enemyRows = 0;
+    _this.playerDead = false;
+    _this.levelEnded = false;
+    _this.conversationIndex = 0;
+    _this.kassandraMonologue = [{
+      dialogue: 'Kassandra: I did it...',
+      outerWindowColor: 0xffff00
+    }, {
+      dialogue: 'Kassandra: But more enemies are on their way.',
+      outerWindowColor: 0xffff00
+    }, {
+      dialogue: 'Kassandra: What should I do...?',
+      outerWindowColor: 0xffff00
+    }, {
+      dialogue: 'Kassandra: All my weapons are locked. I only have the cannon.',
+      outerWindowColor: 0xffff00
+    }, {
+      dialogue: 'Kassandra: I can\'t beat them like this... alone...',
+      outerWindowColor: 0xffff00
+    }, {
+      dialogue: 'Kassandra: Should I... turn back?',
+      outerWindowColor: 0xffff00
+    }, {
+      dialogue: 'Kassandra: No... NO!!',
+      outerWindowColor: 0xffff00
+    }, {
+      dialogue: 'Kassandra: Dammit Kassandra! You\'re not a coward!',
+      outerWindowColor: 0xffff00
+    }, {
+      dialogue: 'Kassandra: I have to fight! Otherwise their death is pointless.',
+      outerWindowColor: 0xffff00
+    }, {
+      dialogue: 'Kassandra: I have to fight for them... For him...',
+      outerWindowColor: 0xffff00
+    }, {
+      dialogue: 'Console: *Beep*, *Beep*.',
+      outerWindowColor: 0x808080
+    }, {
+      dialogue: 'Console: Enemies are approaching!',
+      outerWindowColor: 0x808080
+    }, {
+      dialogue: 'Kassandra: I\'m ready!',
+      outerWindowColor: 0xffff00
+    }];
+    return _this;
+  }
+
+  Level1Scene.prototype.create = function () {
+    var _this = this;
+
+    this.enemyRows = 0;
+    this.playerDead = false;
+    this.levelEnded = false;
+    this.background = this.add.tileSprite(0, 0, this.game.renderer.width, this.game.renderer.height, "level_bg").setOrigin(0).setDepth(0);
+    this.messageBox = new dialogBox_1.DialogBox(this, 300, 400);
+    this.player = this.physics.add.sprite(this.game.renderer.width / 2, this.game.renderer.height * 0.90, "ship4");
+    this.player.setCollideWorldBounds(true);
+    this.player.setScale(0.22);
+    this.enemyGroups = this.physics.add.group();
+    this.playerBullets = this.physics.add.group({
+      classType: Bullet_1.Bullet,
+      maxSize: 50,
+      runChildUpdate: true
+    });
+    this.enemyBullets = this.physics.add.group({
+      classType: Bullet_1.Bullet,
+      maxSize: 50,
+      runChildUpdate: true
+    });
+    this.createEnemies();
+    this.keyboard = this.input.keyboard.addKeys("a, d");
+    this.anims.create({
+      key: 'enemyGetHit',
+      repeat: 1,
+      frameRate: 30,
+      frames: this.anims.generateFrameNames("greenEnemy", {
+        frames: [0, 1, 2, 0]
+      })
+    });
+    this.input.on('pointerdown', function () {
+      _this.bullet = _this.playerBullets.get();
+
+      if (_this.bullet && !_this.playerDead) {
+        _this.bullet.setActive(true).setVisible(true);
+
+        var velocity = new Phaser.Math.Vector2();
+
+        _this.physics.velocityFromRotation(_this.player.rotation, 400, velocity);
+
+        _this.bullet.fire(_this.player, {
+          x: velocity.x * 180 / Math.PI,
+          y: velocity.y * 180 / Math.PI
+        });
+      }
+    }, this);
+    this.physics.world.addCollider(this.playerBullets, this.enemyGroups, function (bullet, enemy) {
+      var _a;
+
+      (_a = _this.enemies.find(function (e) {
+        return e.sprite === enemy;
+      })) === null || _a === void 0 ? void 0 : _a.hit();
+      bullet.destroy();
+    });
+    this.physics.world.addCollider(this.enemyBullets, this.player, function () {
+      _this.playerDead = true;
+
+      _this.player.destroy();
+
+      _this.enemies.forEach(function (e) {
+        return e.stopAttacking();
+      });
+
+      _this.playerDied();
+    });
+  };
+
+  Level1Scene.prototype.update = function () {
+    var _this = this;
+
+    this.background.tilePositionY -= 0.5;
+
+    if (this.enemyGroups.children.entries.length === 0 && this.enemyRows >= 1) {
+      this.player.setCollideWorldBounds(false);
+      this.levelEnded = true;
+      setTimeout(function () {
+        _this.enemies.forEach(function (e) {
+          return e.stopAttacking();
+        }); //this.scene.start(CST.SCENES.MENU);
+
+
+        _this.startMonologue();
+      }, 2000);
+    }
+
+    if (!this.playerDead && !this.levelEnded) {
+      this.player.setVelocity(0);
+
+      if (this.keyboard.a.isDown) {
+        this.player.setVelocityX(-400);
+      }
+
+      if (this.keyboard.d.isDown) {
+        this.player.setVelocityX(400);
+      } // let angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, this.input.x, this.input.y);
+      // //rotation cannon
+      // this.player.setRotation(angle + Math.PI / 2);
+
+    }
+
+    if (this.enemyGroups.children.entries.length === 0 && this.enemyRows < 3) {
+      this.createEnemies();
+    }
+  };
+
+  Level1Scene.prototype.startMonologue = function () {
+    var _this = this;
+
+    this.messageBox.showMessageBox(this.kassandraMonologue[0].dialogue, this.kassandraMonologue[0].outerWindowColor);
+    var nextKey = this.input.keyboard.addKey("space");
+    nextKey.on("down", function () {
+      _this.conversationIndex++;
+
+      if (_this.kassandraMonologue.length === _this.conversationIndex) {
+        //this.scene.start(CST.SCENES.LEVEL1);
+        _this.messageBox.closeWindow();
+
+        setTimeout(function () {
+          _this.tweens.add({
+            targets: _this.player,
+            y: -600,
+            ease: 'Power1',
+            duration: 700
+          });
+
+          _this.player.destroy();
+
+          _this.scene.start(CST_1.CST.SCENES.LEVEL0);
+        }, 1500);
+      } else if (_this.conversationIndex < _this.kassandraMonologue.length) {
+        _this.messageBox.setText(_this.kassandraMonologue[_this.conversationIndex].dialogue, _this.kassandraMonologue[_this.conversationIndex].outerWindowColor);
+      }
+    });
+  };
+
+  Level1Scene.prototype.playerDied = function () {
+    var _this = this;
+
+    this.add.image(this.game.renderer.width / 2, this.game.renderer.height / 2, 'died').setDepth(1);
+    var yesButton = this.add.image(this.game.renderer.width / 2 - 300, this.game.renderer.height / 2 + 50, 'yes').setDepth(1);
+    var noButton = this.add.image(this.game.renderer.width / 2 + 300, this.game.renderer.height / 2 + 50, 'no').setDepth(1);
+    yesButton.setInteractive();
+    noButton.setInteractive();
+    yesButton.on("pointerup", function () {
+      _this.scene.start();
+    });
+    noButton.on("pointerup", function () {
+      _this.scene.start(CST_1.CST.SCENES.MENU);
+    });
+  };
+
+  Level1Scene.prototype.createEnemies = function () {
+    this.enemies = [];
+    this.enemyRows++;
+    var y = 100;
+    var index = 0;
+
+    for (var i = 0; i < 7 * this.enemyRows; i++) {
+      index++;
+
+      if (index > 7) {
+        y = y + 100;
+        index = 1;
+      }
+
+      var x = 100 * (index - 1) + 100;
+      var enemy = new Enemy_1.Enemy(this, x, y, index, this.enemyBullets);
+      this.enemies.push(enemy);
+      this.enemyGroups.add(enemy.sprite);
+    }
+  };
+
+  return Level1Scene;
+}(Phaser.Scene);
+
+exports.Level1Scene = Level1Scene; // class ActiveEnemy {
+//     sprite: Phaser.Physics.Arcade.Sprite;
+//     health: number;
+//     index: any;
+//     interval: NodeJS.Timeout;
+//     constructor(scene: Scene, x: number, y: number, index: number,
+//         enemyBullets: Phaser.Physics.Arcade.Group) {
+//         this.sprite = scene.physics.add.sprite(x, -200, "greenEnemy");
+//         this.sprite.name = `enemy${index}`;
+//         scene.tweens.add({
+//             targets: this.sprite,
+//             y: y,
+//             ease: 'Power1',
+//             duration: 700
+//         });
+//         this.health = 100;
+//         this.index = index;
+//         this.interval = setInterval(() => {
+//             let bullet: Bullet | null = enemyBullets.get();
+//             if (bullet) {
+//                 bullet.setActive(true).setVisible(true);
+//                 let velocity: Phaser.Math.Vector2 = new Phaser.Math.Vector2()
+//                 scene.physics.velocityFromRotation(this.sprite.rotation, 400, velocity);
+//                 bullet.fire(this.sprite, { x: velocity.x * (-180) / Math.PI, y: velocity.y * (-180) / Math.PI });
+//             }
+//         }, Math.floor(Math.random() * Math.floor(2000)) + 1000);
+//     }
+//     hit() {
+//         this.sprite.play('enemyGetHit')
+//         this.health -= 50;
+//         if (this.health <= 0) {
+//             this.sprite.destroy();
+//             this.stopAttacking();
+//         }
+//     }
+//     stopAttacking() {
+//         clearInterval(this.interval);
+//     }
+// }
+},{"../../CST":"src/CST.ts","../../prefabs/Bullet":"src/prefabs/Bullet.ts","../../prefabs/Enemy":"src/prefabs/Enemy.ts","../../prefabs/dialogBox":"src/prefabs/dialogBox.ts"}],"src/scenes/levels/Level0Scene.ts":[function(require,module,exports) {
 "use strict";
 
 var __extends = this && this.__extends || function () {
@@ -921,8 +1036,9 @@ function (_super) {
     _this.ships = [];
     _this.rocketFlames = [];
     _this.conversationIndex = 0;
+    _this.playNextScene = false;
     _this.conversation = [{
-      dialogue: 'Captain: Alright team, we\'re getting close. The enemy is right ahead. The main fleet is pulling most of the enemy ships towards them, so that can perform a surprise direct attack on their main cruiser and and disable the whole army. This is our only chance to defeat them, we have to succed. Everyone is depending on us...',
+      dialogue: 'Captain: Alright team, we\'re getting close. The enemy is right ahead. The main fleet is pulling most of the enemy ships towards them so that we can perform our surprise attack and disable the whole army. This is our only chance to defeat them, we have to succed. Everyone is depending on us...',
       outerWindowColor: 0xff0000
     }, {
       dialogue: 'Captain: Our ships have been equiped with the most advanced weapons earth currently has.',
@@ -931,7 +1047,7 @@ function (_super) {
       dialogue: 'Marco: Captain, we didn\'t have the chance to test the new weapons and everything seems to be deactivated except the main cannons...',
       outerWindowColor: 0x008000
     }, {
-      dialogue: 'Captain: Don\' worry Marco, the weapons work just fine. As a precaution, the weapons have been deactivated.',
+      dialogue: 'Captain: Don\'t worry Marco, the weapons work just fine. As a precaution, the weapons have been deactivated.',
       outerWindowColor: 0xff0000
     }, {
       dialogue: 'Kassandra: Why though? It\'s not like the aliens care about stealing our ships. They have much more advanced weapons and ships than us. That\'s why we\'re losing in the first place.',
@@ -969,6 +1085,43 @@ function (_super) {
     }, {
       dialogue: 'Captain: Kassandra, you\'re last. I\'m sending you the co...',
       outerWindowColor: 0xff0000
+    }];
+    _this.kassandraMonologue = [{
+      dialogue: 'Kassandra: Cap... tain...?',
+      outerWindowColor: 0xffff00
+    }, {
+      dialogue: 'Kassandra: CAPTAAAAIN!!',
+      outerWindowColor: 0xffff00
+    }, {
+      dialogue: 'Kassandra: Eren!! Please respond!',
+      outerWindowColor: 0xffff00
+    }, {
+      dialogue: 'Kassandra: Jean!! Marco!! Annie!!',
+      outerWindowColor: 0xffff00
+    }, {
+      dialogue: 'Kassandra: No...',
+      outerWindowColor: 0xffff00
+    }, {
+      dialogue: 'Kassandra: You\'re... all gone...',
+      outerWindowColor: 0xffff00
+    }, {
+      dialogue: 'Console: *Beep*, *Beep*.',
+      outerWindowColor: 0x808080
+    }, {
+      dialogue: 'Console: Enemies are approaching!',
+      outerWindowColor: 0x808080
+    }, {
+      dialogue: 'Kassandra: No... What do I do now...?',
+      outerWindowColor: 0xffff00
+    }, {
+      dialogue: 'Kassandra: I... have to... fight.',
+      outerWindowColor: 0xffff00
+    }, {
+      dialogue: 'Kassandra: I have to fight!',
+      outerWindowColor: 0xffff00
+    }, {
+      dialogue: 'Kassandra: I have to fight... alone.',
+      outerWindowColor: 0xffff00
     }];
     _this.shipsDetails = [{
       x: 135,
@@ -1024,16 +1177,31 @@ function (_super) {
   Level0Scene.prototype.playDialogue = function (conversation) {
     var _this = this;
 
-    this.conversationIndex = 0;
     this.messageBox.showMessageBox(conversation[0].dialogue, conversation[0].outerWindowColor);
     this.nextKey.on("down", function () {
       _this.conversationIndex++;
 
-      if (conversation.length === _this.conversationIndex) {
+      if (_this.playNextScene && conversation.length === _this.conversationIndex) {
+        _this.messageBox.closeWindow();
+
+        _this.cameras.main.fadeOut(500);
+
+        setTimeout(function () {
+          _this.scene.start(CST_1.CST.SCENES.LEVEL1);
+        }, 1500);
+      } else if (conversation.length === _this.conversationIndex) {
         //this.scene.start(CST.SCENES.LEVEL1);
         _this.createBulletsAndCollision();
 
         _this.messageBox.closeWindow();
+
+        setTimeout(function () {
+          _this.playNextScene = true;
+          conversation = _this.kassandraMonologue;
+          _this.conversationIndex = 0;
+
+          _this.messageBox.showMessageBox(conversation[0].dialogue, conversation[0].outerWindowColor);
+        }, 2000);
       } else if (_this.conversationIndex < _this.conversation.length) {
         _this.messageBox.setText(conversation[_this.conversationIndex].dialogue, conversation[_this.conversationIndex].outerWindowColor);
       } //this.createBulletsAndCollision()
@@ -11188,20 +11356,73 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
+var CST_1 = require("../../CST");
+
+var dialogBox_1 = require("../../prefabs/dialogBox");
+
 var PrologueScene =
 /** @class */
 function (_super) {
   __extends(PrologueScene, _super);
 
   function PrologueScene() {
-    return _super !== null && _super.apply(this, arguments) || this;
+    var _this = _super.call(this, {
+      key: CST_1.CST.SCENES.PROLOGUE
+    }) || this;
+
+    _this.conversationIndex = 0;
+    _this.text = [{
+      dialogue: 'Earth is under attack!',
+      outerWindowColor: 0x808080
+    }, {
+      dialogue: 'A mysterious alien force has invaded the solar system and attacked our planet.',
+      outerWindowColor: 0x808080
+    }, {
+      dialogue: 'They\'re reading all of our moves. Every counter-attack has failed.',
+      outerWindowColor: 0x808080
+    }, {
+      dialogue: 'Our last hope stands in the hands of Earth\'s five best pilots. They have been sent to perform a surprise attack on the enemy\'s main center of command while the Earth\'s remaining forces is pulling all the attention towards them.',
+      outerWindowColor: 0x808080
+    }, {
+      dialogue: 'Will they succeed or will they fall followed by the rest of the Earth?',
+      outerWindowColor: 0x808080
+    }];
+    return _this;
   }
+
+  PrologueScene.prototype.create = function () {
+    var _this = this;
+
+    this.messageBox = new dialogBox_1.DialogBox(this, 300, 400);
+    setTimeout(function () {
+      _this.messageBox.showMessageBox(_this.text[0].dialogue, _this.text[0].outerWindowColor);
+    }, 1000);
+    var nextKey = this.input.keyboard.addKey("space");
+    nextKey.on("down", function () {
+      _this.conversationIndex++;
+
+      if (_this.text.length === _this.conversationIndex) {
+        //this.scene.start(CST.SCENES.LEVEL1);
+        setTimeout(function () {
+          _this.messageBox.closeWindow();
+
+          setTimeout(function () {
+            _this.scene.start(CST_1.CST.SCENES.LEVEL1);
+          }, 1500);
+        }, 1500);
+      } else if (_this.conversationIndex < _this.text.length) {
+        _this.messageBox.setText(_this.text[_this.conversationIndex].dialogue, _this.text[_this.conversationIndex].outerWindowColor);
+      }
+    });
+  };
+
+  PrologueScene.prototype.update = function () {};
 
   return PrologueScene;
 }(Phaser.Scene);
 
 exports.PrologueScene = PrologueScene;
-},{}],"src/main.ts":[function(require,module,exports) {
+},{"../../CST":"src/CST.ts","../../prefabs/dialogBox":"src/prefabs/dialogBox.ts"}],"src/main.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11261,7 +11482,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "50783" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "51511" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

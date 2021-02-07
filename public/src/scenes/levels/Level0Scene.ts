@@ -1,5 +1,6 @@
 import { CST } from "../../CST";
 import { Bullet } from "../../prefabs/Bullet";
+import { IConversation } from "../../prefabs/conversation-interface";
 import { DialogBox } from "../../prefabs/dialogBox";
 
 export class Level0Scene extends Phaser.Scene {
@@ -13,22 +14,37 @@ export class Level0Scene extends Phaser.Scene {
     messageBox: any;
     conversationIndex: number = 0;
     nextKey: any;
+    playNextScene: boolean = false;
     conversation: IConversation[] = [
-        {dialogue: 'Captain: Alright team, we\'re getting close. The enemy is right ahead. The main fleet is pulling most of the enemy ships towards them, so that can perform a surprise direct attack on their main cruiser and and disable the whole army. This is our only chance to defeat them, we have to succed. Everyone is depending on us...', outerWindowColor: 0xff0000}, 
-        {dialogue: 'Captain: Our ships have been equiped with the most advanced weapons earth currently has.', outerWindowColor: 0xff0000}, {dialogue: 'Marco: Captain, we didn\'t have the chance to test the new weapons and everything seems to be deactivated except the main cannons...', outerWindowColor: 0x008000},
-        {dialogue: 'Captain: Don\' worry Marco, the weapons work just fine. As a precaution, the weapons have been deactivated.', outerWindowColor: 0xff0000},
-        {dialogue: 'Kassandra: Why though? It\'s not like the aliens care about stealing our ships. They have much more advanced weapons and ships than us. That\'s why we\'re losing in the first place.', outerWindowColor: 0xffff00},
-        {dialogue: 'Annie: They deactivated the weapons because they knew you were going to be on the team. They didn\'t want to risk you blowing up the base, Kassandra.', outerWindowColor: 0x800080},
-        {dialogue: 'Kassandra: Hilarious. What if we get attacked now? What will you do with your weapons locked, Annie? Sasha isn\'t here to save you again.', outerWindowColor: 0xffff00},
-        {dialogue: 'Annie: You little bit...', outerWindowColor: 0x800080},
-        {dialogue: 'Jean: Kassandra has a point. It was a stupid idea to come all the way out here with everything locked. Our cannons won\'t be enough if we encounter the aliens.', outerWindowColor: 0x00b8ff},
-        {dialogue: 'Captain: Enough! We are Earth\'s last hope and you decide to argue!? It was my decisions to have them locked and I have the codes to unlock them. Jean, I\'m transmitting you the codes to activate the weapons for your ship.', outerWindowColor: 0xff0000},
-        {dialogue: 'Jean: Codes received. Weapons unlocked and activated.', outerWindowColor: 0x00b8ff}, 
-        {dialogue: 'Captain: Marco, you\'re next.', outerWindowColor: 0xff0000},
-        {dialogue: 'Marco: Weapons activated!', outerWindowColor: 0x008000},
-        {dialogue: 'Captain: Annie, it\'s your turn.', outerWindowColor: 0xff0000},
-        {dialogue: 'Annie: Received and activated, captain!', outerWindowColor: 0x800080},
-        {dialogue: 'Captain: Kassandra, you\'re last. I\'m sending you the co...', outerWindowColor: 0xff0000},
+        { dialogue: 'Captain: Alright team, we\'re getting close. The enemy is right ahead. The main fleet is pulling most of the enemy ships towards them so that we can perform our surprise attack and disable the whole army. This is our only chance to defeat them, we have to succed. Everyone is depending on us...', outerWindowColor: 0xff0000 },
+        { dialogue: 'Captain: Our ships have been equiped with the most advanced weapons earth currently has.', outerWindowColor: 0xff0000 }, { dialogue: 'Marco: Captain, we didn\'t have the chance to test the new weapons and everything seems to be deactivated except the main cannons...', outerWindowColor: 0x008000 },
+        { dialogue: 'Captain: Don\'t worry Marco, the weapons work just fine. As a precaution, the weapons have been deactivated.', outerWindowColor: 0xff0000 },
+        { dialogue: 'Kassandra: Why though? It\'s not like the aliens care about stealing our ships. They have much more advanced weapons and ships than us. That\'s why we\'re losing in the first place.', outerWindowColor: 0xffff00 },
+        { dialogue: 'Annie: They deactivated the weapons because they knew you were going to be on the team. They didn\'t want to risk you blowing up the base, Kassandra.', outerWindowColor: 0x800080 },
+        { dialogue: 'Kassandra: Hilarious. What if we get attacked now? What will you do with your weapons locked, Annie? Sasha isn\'t here to save you again.', outerWindowColor: 0xffff00 },
+        { dialogue: 'Annie: You little bit...', outerWindowColor: 0x800080 },
+        { dialogue: 'Jean: Kassandra has a point. It was a stupid idea to come all the way out here with everything locked. Our cannons won\'t be enough if we encounter the aliens.', outerWindowColor: 0x00b8ff },
+        { dialogue: 'Captain: Enough! We are Earth\'s last hope and you decide to argue!? It was my decisions to have them locked and I have the codes to unlock them. Jean, I\'m transmitting you the codes to activate the weapons for your ship.', outerWindowColor: 0xff0000 },
+        { dialogue: 'Jean: Codes received. Weapons unlocked and activated.', outerWindowColor: 0x00b8ff },
+        { dialogue: 'Captain: Marco, you\'re next.', outerWindowColor: 0xff0000 },
+        { dialogue: 'Marco: Weapons activated!', outerWindowColor: 0x008000 },
+        { dialogue: 'Captain: Annie, it\'s your turn.', outerWindowColor: 0xff0000 },
+        { dialogue: 'Annie: Received and activated, captain!', outerWindowColor: 0x800080 },
+        { dialogue: 'Captain: Kassandra, you\'re last. I\'m sending you the co...', outerWindowColor: 0xff0000 },
+    ];
+    kassandraMonologue: IConversation[] = [
+        { dialogue: 'Kassandra: Cap... tain...?', outerWindowColor: 0xffff00 },
+        { dialogue: 'Kassandra: CAPTAAAAIN!!', outerWindowColor: 0xffff00 },
+        { dialogue: 'Kassandra: Eren!! Please respond!', outerWindowColor: 0xffff00 },
+        { dialogue: 'Kassandra: Jean!! Marco!! Annie!!', outerWindowColor: 0xffff00 },
+        { dialogue: 'Kassandra: No...', outerWindowColor: 0xffff00 },
+        { dialogue: 'Kassandra: You\'re... all gone...', outerWindowColor: 0xffff00 },
+        { dialogue: 'Console: *Beep*, *Beep*.', outerWindowColor: 0x808080 },
+        { dialogue: 'Console: Enemies are approaching!', outerWindowColor: 0x808080 },
+        { dialogue: 'Kassandra: No... What do I do now...?', outerWindowColor: 0xffff00 },
+        { dialogue: 'Kassandra: I... have to... fight.', outerWindowColor: 0xffff00 },
+        { dialogue: 'Kassandra: I have to fight!', outerWindowColor: 0xffff00 },
+        { dialogue: 'Kassandra: I have to fight... alone.', outerWindowColor: 0xffff00 },
     ];
     shipsDetails = [{ x: 135, y: 350, color: 0x04ff00 }, { x: 135 * 2, y: 330, color: 0xfff700 }, { x: 135 * 3, y: 310, color: 0xff3bb1 }, { x: 135 * 4, y: 330, color: 0xc619ff }, { x: 135 * 5, y: 350, color: 0 }]
 
@@ -63,14 +79,25 @@ export class Level0Scene extends Phaser.Scene {
     }
 
     playDialogue(conversation: IConversation[]) {
-        this.conversationIndex = 0;
         this.messageBox.showMessageBox(conversation[0].dialogue, conversation[0].outerWindowColor);
         this.nextKey.on("down", () => {
             this.conversationIndex++;
-            if (conversation.length === this.conversationIndex) {
+            if(this.playNextScene && conversation.length === this.conversationIndex) {
+                this.messageBox.closeWindow();
+                this.cameras.main.fadeOut(500);
+                setTimeout(() => {
+                    this.scene.start(CST.SCENES.LEVEL1);
+                }, 1500);
+            } else if (conversation.length === this.conversationIndex) {
                 //this.scene.start(CST.SCENES.LEVEL1);
                 this.createBulletsAndCollision();
                 this.messageBox.closeWindow();
+                setTimeout(() => {
+                    this.playNextScene = true;
+                    conversation = this.kassandraMonologue;
+                    this.conversationIndex = 0;
+                    this.messageBox.showMessageBox(conversation[0].dialogue, conversation[0].outerWindowColor);
+                }, 2000)
             } else if (this.conversationIndex < this.conversation.length) {
                 this.messageBox.setText(conversation[this.conversationIndex].dialogue, conversation[this.conversationIndex].outerWindowColor);
             }
@@ -115,7 +142,3 @@ export class Level0Scene extends Phaser.Scene {
     }
 }
 
-interface IConversation {
-    dialogue: string;
-    outerWindowColor: number;
-}

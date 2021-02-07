@@ -1,6 +1,9 @@
 import { CST } from "../../CST";
 import { Bullet } from "../../prefabs/Bullet";
 import { Scene } from "phaser";
+import { Enemy } from "../../prefabs/Enemy";
+import { IConversation } from "../../prefabs/conversation-interface";
+import { DialogBox } from "../../prefabs/dialogBox";
 export class Level1Scene extends Phaser.Scene {
     background!: Phaser.GameObjects.TileSprite;
     player!: Phaser.Physics.Arcade.Sprite;
@@ -8,7 +11,7 @@ export class Level1Scene extends Phaser.Scene {
     playerBullets!: Phaser.Physics.Arcade.Group;
     enemyBullets!: Phaser.Physics.Arcade.Group;
     bullet?: Bullet;
-    enemies: ActiveEnemy[] = []
+    enemies: Enemy[] = []
     enemyGroups!: Phaser.Physics.Arcade.Group;
     enemyRows: number = 0;
     playerDead: boolean = false;
@@ -16,6 +19,23 @@ export class Level1Scene extends Phaser.Scene {
     yesButton: any;
     noButton: any;
     diedTitle: any
+    messageBox: any;
+    conversationIndex: number = 0;
+    kassandraMonologue: IConversation[] = [
+        { dialogue: 'Kassandra: I did it...', outerWindowColor: 0xffff00 },
+        { dialogue: 'Kassandra: But more enemies are on their way.', outerWindowColor: 0xffff00 },
+        { dialogue: 'Kassandra: What should I do...?', outerWindowColor: 0xffff00 },
+        { dialogue: 'Kassandra: All my weapons are locked. I only have the cannon.', outerWindowColor: 0xffff00 },
+        { dialogue: 'Kassandra: I can\'t beat them like this... alone...', outerWindowColor: 0xffff00 },
+        { dialogue: 'Kassandra: Should I... turn back?', outerWindowColor: 0xffff00 },
+        { dialogue: 'Kassandra: No... NO!!', outerWindowColor: 0xffff00 },
+        { dialogue: 'Kassandra: Dammit Kassandra! You\'re not a coward!', outerWindowColor: 0xffff00 },
+        { dialogue: 'Kassandra: I have to fight! Otherwise their death is pointless.', outerWindowColor: 0xffff00 },
+        { dialogue: 'Kassandra: I have to fight for them... For him...', outerWindowColor: 0xffff00 },
+        { dialogue: 'Console: *Beep*, *Beep*.', outerWindowColor: 0x808080 },
+        { dialogue: 'Console: Enemies are approaching!', outerWindowColor: 0x808080 },
+        { dialogue: 'Kassandra: I\'m ready!', outerWindowColor: 0xffff00 },
+    ];
     constructor() {
         super({
             key: CST.SCENES.LEVEL1
@@ -26,8 +46,10 @@ export class Level1Scene extends Phaser.Scene {
         this.playerDead = false;
         this.levelEnded = false;
         this.background = this.add.tileSprite(0, 0, this.game.renderer.width, this.game.renderer.height, "level_bg").setOrigin(0).setDepth(0);
-        this.player = this.physics.add.sprite(this.game.renderer.width / 2, this.game.renderer.height * 0.90, "player");
+        this.messageBox = new DialogBox(this, 300, 400);
+        this.player = this.physics.add.sprite(this.game.renderer.width / 2, this.game.renderer.height * 0.90, "ship4");
         this.player.setCollideWorldBounds(true);
+        this.player.setScale(0.22);
         this.enemyGroups = this.physics.add.group();
         this.playerBullets = this.physics.add.group({ classType: Bullet, maxSize: 50, runChildUpdate: true });
         this.enemyBullets = this.physics.add.group({ classType: Bullet, maxSize: 50, runChildUpdate: true });
@@ -54,29 +76,23 @@ export class Level1Scene extends Phaser.Scene {
         this.physics.world.addCollider(this.playerBullets, this.enemyGroups, (bullet, enemy) => {
             this.enemies.find(e => e.sprite === enemy)?.hit();
             bullet.destroy();
-        })
+        });
         this.physics.world.addCollider(this.enemyBullets, this.player, () => {
             this.playerDead = true;
             this.player.destroy();
             this.enemies.forEach(e => e.stopAttacking());
             this.playerDied();
-        })
+        });
     }
     update() {
         this.background.tilePositionY -= 0.5;
         if (this.enemyGroups.children.entries.length === 0 && this.enemyRows >= 1) {
             this.player.setCollideWorldBounds(false);
             this.levelEnded = true;
-            this.tweens.add({
-                targets: this.player,
-                y: -600,
-                ease: 'Power1',
-                duration: 700
-            });
             setTimeout(() => {
-                this.player.destroy();
                 this.enemies.forEach(e => e.stopAttacking());
-                this.scene.start(CST.SCENES.MENU);
+                //this.scene.start(CST.SCENES.MENU);
+                this.startMonologue();
             }, 2000)
         }
         if (!this.playerDead && !this.levelEnded) {
@@ -87,14 +103,38 @@ export class Level1Scene extends Phaser.Scene {
             if (this.keyboard.d.isDown) {
                 this.player.setVelocityX(400);
             }
-            let angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, this.input.x, this.input.y);
-            //rotation cannon
-            this.player.setRotation(angle + Math.PI / 2);
+            // let angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, this.input.x, this.input.y);
+            // //rotation cannon
+            // this.player.setRotation(angle + Math.PI / 2);
         }
         if (this.enemyGroups.children.entries.length === 0 && this.enemyRows < 3) {
             this.createEnemies();
         }
 
+    }
+
+    startMonologue() {
+        this.messageBox.showMessageBox(this.kassandraMonologue[0].dialogue, this.kassandraMonologue[0].outerWindowColor);
+        let nextKey = this.input.keyboard.addKey("space");
+        nextKey.on("down", () => {
+            this.conversationIndex++;
+            if (this.kassandraMonologue.length === this.conversationIndex) {
+                //this.scene.start(CST.SCENES.LEVEL1);
+                this.messageBox.closeWindow();
+                setTimeout(() => {
+                    this.tweens.add({
+                        targets: this.player,
+                        y: -600,
+                        ease: 'Power1',
+                        duration: 700
+                    });
+                    this.player.destroy();
+                    this.scene.start(CST.SCENES.LEVEL0);
+                },1500)
+            } else if (this.conversationIndex < this.kassandraMonologue.length) {
+                this.messageBox.setText(this.kassandraMonologue[this.conversationIndex].dialogue, this.kassandraMonologue[this.conversationIndex].outerWindowColor);
+            }
+        });
     }
 
     playerDied() {
@@ -124,51 +164,51 @@ export class Level1Scene extends Phaser.Scene {
                 index = 1;
             }
             let x = 100 * (index - 1) + 100;
-            const enemy = new ActiveEnemy(this, x, y, index, this.enemyBullets)
+            const enemy = new Enemy(this, x, y, index, this.enemyBullets)
             this.enemies.push(enemy);
             this.enemyGroups.add(enemy.sprite);
         }
     }
 }
 
-class ActiveEnemy {
-    sprite: Phaser.Physics.Arcade.Sprite;
-    health: number;
-    index: any;
-    interval: NodeJS.Timeout;
-    constructor(scene: Scene, x: number, y: number, index: number,
-        enemyBullets: Phaser.Physics.Arcade.Group) {
-        this.sprite = scene.physics.add.sprite(x, -200, "greenEnemy");
-        this.sprite.name = `enemy${index}`;
-        scene.tweens.add({
-            targets: this.sprite,
-            y: y,
-            ease: 'Power1',
-            duration: 700
-        });
-        this.health = 100;
-        this.index = index;
+// class ActiveEnemy {
+//     sprite: Phaser.Physics.Arcade.Sprite;
+//     health: number;
+//     index: any;
+//     interval: NodeJS.Timeout;
+//     constructor(scene: Scene, x: number, y: number, index: number,
+//         enemyBullets: Phaser.Physics.Arcade.Group) {
+//         this.sprite = scene.physics.add.sprite(x, -200, "greenEnemy");
+//         this.sprite.name = `enemy${index}`;
+//         scene.tweens.add({
+//             targets: this.sprite,
+//             y: y,
+//             ease: 'Power1',
+//             duration: 700
+//         });
+//         this.health = 100;
+//         this.index = index;
 
-        this.interval = setInterval(() => {
-            let bullet: Bullet | null = enemyBullets.get();
-            if (bullet) {
-                bullet.setActive(true).setVisible(true);
-                let velocity: Phaser.Math.Vector2 = new Phaser.Math.Vector2()
-                scene.physics.velocityFromRotation(this.sprite.rotation, 400, velocity);
-                bullet.fire(this.sprite, { x: velocity.x * (-180) / Math.PI, y: velocity.y * (-180) / Math.PI });
-            }
-        }, Math.floor(Math.random() * Math.floor(2000)) + 1000);
-    }
+//         this.interval = setInterval(() => {
+//             let bullet: Bullet | null = enemyBullets.get();
+//             if (bullet) {
+//                 bullet.setActive(true).setVisible(true);
+//                 let velocity: Phaser.Math.Vector2 = new Phaser.Math.Vector2()
+//                 scene.physics.velocityFromRotation(this.sprite.rotation, 400, velocity);
+//                 bullet.fire(this.sprite, { x: velocity.x * (-180) / Math.PI, y: velocity.y * (-180) / Math.PI });
+//             }
+//         }, Math.floor(Math.random() * Math.floor(2000)) + 1000);
+//     }
 
-    hit() {
-        this.sprite.play('enemyGetHit')
-        this.health -= 50;
-        if (this.health <= 0) {
-            this.sprite.destroy();
-            this.stopAttacking();
-        }
-    }
-    stopAttacking() {
-        clearInterval(this.interval);
-    }
-}
+//     hit() {
+//         this.sprite.play('enemyGetHit')
+//         this.health -= 50;
+//         if (this.health <= 0) {
+//             this.sprite.destroy();
+//             this.stopAttacking();
+//         }
+//     }
+//     stopAttacking() {
+//         clearInterval(this.interval);
+//     }
+// }
